@@ -1,0 +1,10 @@
+Debug/
+Release/
+*.ARF
+*.tws
+*.nav
+*.tps
+*.Hbp
+*.BKW
+*.BKS
+*.BKP
