@@ -1,5 +1,6 @@
 Debug/
 Release/
+make/
 *.ARF
 *.tws
 *.nav
@@ -8,3 +9,4 @@ Release/
 *.BKW
 *.BKS
 *.BKP
+*.mak.*

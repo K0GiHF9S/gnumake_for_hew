@@ -1,0 +1,60 @@
+ifeq ($(and $(SHC_INC),$(SHC_LIB),$(SHC_TMP)),)
+$(error SHC_INC, SHC_LIB and SHC_TMP must be set.)
+endif
+
+CC := $(SHC_LIB)/shc.exe -lang=c
+CXX := $(SHC_LIB)/shc.exe -lang=cpp
+ASM := $(SHC_LIB)/asmsh.exe
+LIBGEN := $(SHC_LIB)/lbgsh.exe
+LINK := $(SHC_LIB)/LnkSpawn.exe
+
+LIBGENFLAGS =
+LIBGENFLAGS += -cpu=sh4a
+LIBGENFLAGS += -endian=little
+LIBGENFLAGS += -gbr=auto
+LIBGENFLAGS += -ecpp
+LIBGENFLAGS += -head=runtime,new,ctype,math,mathf,stdarg,stdio,stdlib,string,ios,complex,cppstring
+
+CPPFLAGS :=
+CPPFLAGS += -cpu=sh4a
+CPPFLAGS += -endian=little
+CPPFLAGS += -debug
+CPPFLAGS += -show=source,include,expansion,tab=4
+CPPFLAGS += -gbr=auto
+CPPFLAGS += -global_volatile=0
+CPPFLAGS += -opt_range=all
+CPPFLAGS += -infinite_loop=0
+CPPFLAGS += -del_vacant_loop=0
+CPPFLAGS += -struct_alloc=1
+CPPFLAGS += -nologo
+ifdef is_debug
+CPPFLAGS += -optimize=0
+endif
+
+ASMFLAGS :=
+ASMFLAGS += -cpu=sh4a
+ASMFLAGS += -endian=little
+ASMFLAGS += -round=zero
+ASMFLAGS += -denormalize=off
+ASMFLAGS += -debug
+ASMFLAGS += -literal=pool,branch,jump,return
+ASMFLAGS += -nolist
+ASMFLAGS += -nologo
+ASMFLAGS += -chgincpath
+
+OBJ_C := $(patsubst %.c,$(OBJ_DIR)/%.obj,$(notdir $(C_SRC)))
+OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(notdir $(CXX_SRC)))
+OBJ_ASM := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(ASM_SRC)))
+OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_ASM)
+
+$(LIBGEN_TARGET) :
+	$(LIBGEN) $(LIBGENFLAGS) -output=$@
+
+$(OBJ_ASM) : $(OBJ_DIR)/%.obj : %.src
+	$(ASM) $(ASMFLAGS) -object=$@ $<
+
+$(OBJ_C) : $(OBJ_DIR)/%.obj : %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
+
+$(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<
