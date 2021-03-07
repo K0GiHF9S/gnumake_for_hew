@@ -4,8 +4,6 @@ LIBGEN_TARGET := $(OBJ_DIR)/sample.lib
 
 all : $(TARGET)
 
-include $(APPEND_MAKE)
-
 ifeq ($(CONFIG),Debug)
 is_debug=1
 endif

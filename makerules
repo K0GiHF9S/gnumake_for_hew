@@ -2,6 +2,15 @@ ifeq ($(and $(SHC_INC),$(SHC_LIB),$(SHC_TMP)),)
 $(error SHC_INC, SHC_LIB and SHC_TMP must be set.)
 endif
 
+PYTHON ?= py -3
+SCRIPT := $(dir $(lastword $(MAKEFILE_LIST)))hwp2makefile.py
+
+$(LNK_SUBCOMMAND) : $(SCRIPT) $(PROJECT)
+$(APPEND_MAKE) : $(LNK_SUBCOMMAND) $(SCRIPT) $(PROJECT)
+	$(PYTHON) $(SCRIPT) $(PROJECT) $(CONFIG)
+
+include $(APPEND_MAKE)
+
 CC := shc.exe -lang=c
 CXX := shc.exe -lang=cpp
 AS := asmsh.exe
@@ -61,3 +70,4 @@ $(OBJ_C) : $(OBJ_DIR)/%.obj : %.c $(APPEND_MAKE)
 
 $(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp $(APPEND_MAKE)
 	$(CXX) $(CXXFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<
+

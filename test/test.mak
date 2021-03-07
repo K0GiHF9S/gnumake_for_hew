@@ -3,8 +3,6 @@ TARGET := $(OBJ_DIR)/test.lib
 
 all : $(TARGET)
 
-include $(APPEND_MAKE)
-
 ifeq ($(CONFIG),Debug)
 is_debug=1
 endif
