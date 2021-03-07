@@ -30,18 +30,18 @@ LDFLAGS += -nologo
 LDFLAGS += -library=$(LIBGEN_TARGET)
 LDFLAGS += $(addprefix -library=,$(LIBS))
 
-OBJ_ABS := $(patsubst %.bin,%.abs,$(TARGET))
+ABS := $(patsubst %.bin,%.abs,$(TARGET))
 
 $(LIBGEN_TARGET) :
 	$(AR) $(ARFLAGS) -output=$@
 
-$(OBJ_ABS) : $(OBJS) $(LIBGEN_TARGET) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
+$(ABS) : $(OBJS) $(LIBGEN_TARGET) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
 	$(LD) $(LDFLAGS) -output=$@ -subcommand=$(LNK_SUBCOMMAND)
 
-$(TARGET) : $(OBJ_ABS)
+$(TARGET) : $(ABS)
 	$(LD) -form=binary -output=$@ $<
 
 clean:
-	$(RM) $(TARGET) $(OBJ_ABS) $(OBJS) $(LIBGEN_TARGET)
+	$(RM) $(TARGET) $(ABS) $(OBJS) $(DEPS_C) $(DEPS_CXX) $(LIBGEN_TARGET)
 
 .PHONY : all clean

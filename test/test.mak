@@ -21,6 +21,6 @@ $(TARGET) : $(OBJS) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
 	$(LD) $(LDFLAGS) -output=$@ -subcommand=$(LNK_SUBCOMMAND)
 
 clean:
-	$(RM) $(TARGET) $(OBJS)
+	$(RM) $(TARGET) $(OBJS) $(DEPS_C) $(DEPS_CXX)
 
 .PHONY : all clean

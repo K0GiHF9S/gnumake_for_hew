@@ -4,6 +4,7 @@ endif
 
 PYTHON ?= py -3
 SCRIPT := $(dir $(lastword $(MAKEFILE_LIST)))hwp2makefile.py
+DEPS_MAKE := clang
 
 $(LNK_SUBCOMMAND) : $(SCRIPT) $(PROJECT)
 $(APPEND_MAKE) : $(LNK_SUBCOMMAND) $(SCRIPT) $(PROJECT)
@@ -61,13 +62,23 @@ OBJ_C := $(patsubst %.c,$(OBJ_DIR)/%.obj,$(notdir $(C_SRC)))
 OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(notdir $(CXX_SRC)))
 OBJ_AS := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(AS_SRC)))
 OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_AS)
+DEPS_C := $(patsubst %.obj,%.d,$(OBJ_C))
+DEPS_CXX := $(patsubst %.obj,%.d,$(OBJ_CXX))
 
 $(OBJ_AS) : $(OBJ_DIR)/%.obj : %.src $(APPEND_MAKE)
 	$(AS) $(ASFLAGS) -object=$@ $<
 
-$(OBJ_C) : $(OBJ_DIR)/%.obj : %.c $(APPEND_MAKE)
+$(OBJ_C) : $(OBJ_DIR)/%.obj : %.c $(OBJ_DIR)/%.d $(APPEND_MAKE)
 	$(CC) $(CFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
 
-$(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp $(APPEND_MAKE)
+$(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp $(OBJ_DIR)/%.d $(APPEND_MAKE)
 	$(CXX) $(CXXFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<
 
+$(DEPS_C) : $(OBJ_DIR)/%.d : %.c
+	$(DEPS_MAKE) $< -MM -MP -MF $@ -isystem$(SHC_INC) $(addprefix -I,$(INCLUDE)) $(addprefix -D,$(DEFINE))
+
+$(DEPS_CXX) : $(OBJ_DIR)/%.d : %.cpp
+	$(DEPS_MAKE) $< -MM -MP -MF $@ -isystem$(SHC_INC) $(addprefix -I,$(INCLUDE)) $(addprefix -D,$(DEFINE))
+
+-include $(wildcard $(DEPS_C))
+-include $(wildcard $(DEPS_CXX))
