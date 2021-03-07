@@ -3,10 +3,11 @@ PYTHON ?= py -3
 
 SCRIPT := hwp2makefile.py
 
+TEST := test/test.mak
 SAMPLE := sample/sample.mak
+SAMPLE : TEST
 
-subs := SAMPLE
-
+subs := TEST SAMPLE
 
 all : $(subs)
 

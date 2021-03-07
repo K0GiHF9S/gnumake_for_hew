@@ -5,7 +5,6 @@ LIBGEN_TARGET := $(OBJ_DIR)/sample.lib
 all : $(TARGET)
 
 include $(APPEND_MAKE)
-LIBS := $(LIBGEN_TARGET)
 
 ifeq ($(CONFIG),Debug)
 is_debug=1
@@ -30,6 +29,7 @@ LINKFLAGS += -nomessage
 LINKFLAGS += -list=$(patsubst %.bin,%.map,$(TARGET))
 LINKFLAGS += -nooptimize
 LINKFLAGS += -nologo
+LINKFLAGS += -library=$(LIBGEN_TARGET)
 LINKFLAGS += $(addprefix -library=,$(LIBS))
 
 OBJ_ABS := $(patsubst %.bin,%.abs,$(TARGET))
@@ -37,7 +37,7 @@ OBJ_ABS := $(patsubst %.bin,%.abs,$(TARGET))
 $(LIBGEN_TARGET) :
 	$(LIBGEN) $(LIBGENFLAGS) -output=$@
 
-$(OBJ_ABS) : $(OBJS) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
+$(OBJ_ABS) : $(OBJS) $(LIBGEN_TARGET) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
 	$(LINK) $(LINKFLAGS) -output=$@ -subcommand=$(LNK_SUBCOMMAND)
 
 $(TARGET) : $(OBJ_ABS)

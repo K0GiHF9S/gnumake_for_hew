@@ -8,6 +8,10 @@ ASM := asmsh.exe
 LIBGEN := lbgsh.exe
 LINK := optlnk.exe
 
+NULL  :=
+SPACE := $(NULL) $(NULL)
+COMMA := ,
+
 CFLAGS = $(CPPFLAGS)
 CXXFLAGS = $(CPPFLAGS)
 
@@ -23,6 +27,12 @@ CPPFLAGS += -infinite_loop=0
 CPPFLAGS += -del_vacant_loop=0
 CPPFLAGS += -struct_alloc=1
 CPPFLAGS += -nologo
+ifneq ($(INCLUDE),)
+CPPFLAGS += -include=$(subst $(SPACE),$(COMMA),$(strip $(INCLUDE)))
+endif
+ifneq ($(DEFINE),)
+CPPFLAGS += -define=$(subst $(SPACE),$(COMMA),$(strip $(DEFINE)))
+endif
 ifdef is_debug
 CPPFLAGS += -optimize=0
 endif
@@ -43,11 +53,11 @@ OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(notdir $(CXX_SRC)))
 OBJ_ASM := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(ASM_SRC)))
 OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_ASM)
 
-$(OBJ_ASM) : $(OBJ_DIR)/%.obj : %.src
+$(OBJ_ASM) : $(OBJ_DIR)/%.obj : %.src $(APPEND_MAKE)
 	$(ASM) $(ASMFLAGS) -object=$@ $<
 
-$(OBJ_C) : $(OBJ_DIR)/%.obj : %.c
+$(OBJ_C) : $(OBJ_DIR)/%.obj : %.c $(APPEND_MAKE)
 	$(C) $(CFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
 
-$(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp
+$(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp $(APPEND_MAKE)
 	$(CXX) $(CXXFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<

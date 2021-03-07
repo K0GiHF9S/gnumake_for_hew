@@ -15,6 +15,7 @@ def read_hwp(p_filename, config):
         .replace('^"', '') \
         .replace('$(PROJDIR)', '.') \
         .replace('$(CONFIGDIR)', config) \
+        .replace('$(CONFIGNAME)', config) \
         .replace('$(PROJECTNAME)', p_filename.stem)
 
 
@@ -53,14 +54,22 @@ def to_option_dict(data, config):
         print('Not supported option.')
         sys.exit(1)
 
-    option_data = {k: v.split('|') for (k, v) in re.findall(
-        '\[\w\|(\w+)\|([^\]]*)\]', option_datas[0])}
+    def to_dict(d): return {k: v.split('|') for (k, v) in re.findall(
+        '\[\w\|(\w+)\|([^\]]*)\]', d)}
+
+    option_data = to_dict(option_datas[0])
 
     link_option_data = re.findall(
+        '^.*\[S\|FORM\|.*\n', option_area, flags=re.MULTILINE)
+    link_option_data = to_dict(link_option_data[0])
+
+    optimize_option_data = re.findall(
         '^.*\[S\|START\|.*\n', option_area, flags=re.MULTILINE)
-    link_option_data = {k: v.split('|') for (k, v) in re.findall(
-        '\[\w\|(\w+)\|([^\]]*)\]', link_option_data[0])}
-    return option_data, link_option_data
+    if len(optimize_option_data) > 0:
+        optimize_option_data = to_dict(optimize_option_data[0])
+    else:
+        optimize_option_data = None
+    return option_data, link_option_data, optimize_option_data
 
 
 def filter_include_dirs(option_data):
@@ -71,10 +80,12 @@ def filter_defines(option_data):
     return option_data.get('DEFINE', '')
 
 
-def filter_sections(link_option_data):
-    if not 'START' in link_option_data:
-        return
-    start = ','.join(link_option_data['START'])
+def filter_libs(link_option_data):
+    return link_option_data.get('INPUTLIBRARY', '')
+
+
+def filter_sections(optimize_option_data):
+    start = ','.join(optimize_option_data['START'])
     return re.sub('\(([\dA-F]+)\)', r'/\1', start)
 
 
@@ -88,7 +99,8 @@ def hwp2rule(filename, config):
     Path(config).mkdir(exist_ok=True)
 
     record_dir = filter_parent_dir(data)
-    option_data, link_option_data = to_option_dict(data, config)
+    option_data, link_option_data, optimize_option_data = to_option_dict(
+        data, config)
 
     c_project_files, cpp_project_files, asm_project_files = filter_src_files(
         data, record_dir)
@@ -97,10 +109,13 @@ def hwp2rule(filename, config):
     v += 'ASM_SRC := ' + ' \\\n\t'.join(asm_project_files) + '\n'
 
     include_dirs = filter_include_dirs(option_data)
-    v += 'INCLUDE := ' + ','.join(include_dirs) + '\n'
+    v += 'INCLUDE := ' + ' '.join(include_dirs) + '\n'
 
     defines = filter_defines(option_data)
-    v += 'DEFINE := ' + ','.join(defines) + '\n'
+    v += 'DEFINE := ' + ' '.join(defines) + '\n'
+
+    libs = filter_libs(link_option_data)
+    v += 'LIBS := ' + ' '.join(libs) + '\n'
 
     with open(p_outfile, 'w', encoding='utf8') as f:
         f.write(v)
@@ -108,8 +123,8 @@ def hwp2rule(filename, config):
     c = '\n'.join([f'-input=./{config}/' + PurePosixPath(s).with_suffix('.obj').name
                    for s in (c_project_files + cpp_project_files + asm_project_files)]) + '\n'
 
-    sections = filter_sections(link_option_data)
-    if sections is not None:
+    if optimize_option_data is not None:
+        sections = filter_sections(optimize_option_data)
         c += f'-start={sections}\n'
 
     with open(p_lnkfile, 'w', encoding='cp932') as f:
