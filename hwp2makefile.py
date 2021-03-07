@@ -5,7 +5,7 @@ import re
 
 C_PREFIX = '.c'
 CPP_PREFIX = '.cpp'
-ASM_PREFIX = '.src'
+AS_PREFIX = '.src'
 
 
 def read_hwp(p_filename, config):
@@ -34,7 +34,7 @@ def filter_src_files(data, record_dir):
 
     c_project_files = [f for f in project_files if f.endswith(C_PREFIX)]
     cpp_project_files = [f for f in project_files if f.endswith(CPP_PREFIX)]
-    asm_project_files = [f for f in project_files if f.endswith(ASM_PREFIX)]
+    asm_project_files = [f for f in project_files if f.endswith(AS_PREFIX)]
     return c_project_files, cpp_project_files, asm_project_files
 
 
@@ -106,7 +106,7 @@ def hwp2rule(filename, config):
         data, record_dir)
     v = 'C_SRC := ' + ' \\\n\t'.join(c_project_files) + '\n'
     v += 'CXX_SRC := ' + ' \\\n\t'.join(cpp_project_files) + '\n'
-    v += 'ASM_SRC := ' + ' \\\n\t'.join(asm_project_files) + '\n'
+    v += 'AS_SRC := ' + ' \\\n\t'.join(asm_project_files) + '\n'
 
     include_dirs = filter_include_dirs(option_data)
     v += 'INCLUDE := ' + ' '.join(include_dirs) + '\n'

@@ -2,11 +2,11 @@ ifeq ($(and $(SHC_INC),$(SHC_LIB),$(SHC_TMP)),)
 $(error SHC_INC, SHC_LIB and SHC_TMP must be set.)
 endif
 
-C := shc.exe -lang=c
+CC := shc.exe -lang=c
 CXX := shc.exe -lang=cpp
-ASM := asmsh.exe
-LIBGEN := lbgsh.exe
-LINK := optlnk.exe
+AS := asmsh.exe
+AR := lbgsh.exe
+LD := optlnk.exe
 
 NULL  :=
 SPACE := $(NULL) $(NULL)
@@ -37,27 +37,27 @@ ifdef is_debug
 CPPFLAGS += -optimize=0
 endif
 
-ASMFLAGS :=
-ASMFLAGS += -cpu=sh4a
-ASMFLAGS += -endian=little
-ASMFLAGS += -round=zero
-ASMFLAGS += -denormalize=off
-ASMFLAGS += -debug
-ASMFLAGS += -literal=pool,branch,jump,return
-ASMFLAGS += -nolist
-ASMFLAGS += -nologo
-ASMFLAGS += -chgincpath
+ASFLAGS :=
+ASFLAGS += -cpu=sh4a
+ASFLAGS += -endian=little
+ASFLAGS += -round=zero
+ASFLAGS += -denormalize=off
+ASFLAGS += -debug
+ASFLAGS += -literal=pool,branch,jump,return
+ASFLAGS += -nolist
+ASFLAGS += -nologo
+ASFLAGS += -chgincpath
 
 OBJ_C := $(patsubst %.c,$(OBJ_DIR)/%.obj,$(notdir $(C_SRC)))
 OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(notdir $(CXX_SRC)))
-OBJ_ASM := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(ASM_SRC)))
-OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_ASM)
+OBJ_AS := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(AS_SRC)))
+OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_AS)
 
-$(OBJ_ASM) : $(OBJ_DIR)/%.obj : %.src $(APPEND_MAKE)
-	$(ASM) $(ASMFLAGS) -object=$@ $<
+$(OBJ_AS) : $(OBJ_DIR)/%.obj : %.src $(APPEND_MAKE)
+	$(AS) $(ASFLAGS) -object=$@ $<
 
 $(OBJ_C) : $(OBJ_DIR)/%.obj : %.c $(APPEND_MAKE)
-	$(C) $(CFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
+	$(CC) $(CFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
 
 $(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp $(APPEND_MAKE)
 	$(CXX) $(CXXFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<

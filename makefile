@@ -9,7 +9,7 @@ SAMPLE : TEST
 
 subs := TEST SAMPLE
 
-all : $(subs)
+all clean : $(subs)
 
 define SUB_RULE
 $(eval $1_PROJECT := $(basename $($1)).hwp)
@@ -27,6 +27,6 @@ endef
 $(foreach sub,$(subs),$(eval $(call SUB_RULE,$(sub))))
 
 $(subs):
-	@$(MAKE) -C $(dir $($@)) -f $(notdir $($@)) CONFIG=$(CONFIG) APPEND_MAKE=$(notdir $($@_APPEND)) LNK_SUBCOMMAND=$(notdir $($@_LNK))
+	@$(MAKE) -C $(dir $($@)) -f $(notdir $($@)) CONFIG=$(CONFIG) APPEND_MAKE=$(notdir $($@_APPEND)) LNK_SUBCOMMAND=$(notdir $($@_LNK)) $(MAKECMDGOALS)
 
-.PHONY : all $(subs)
+.PHONY : all clean $(subs)

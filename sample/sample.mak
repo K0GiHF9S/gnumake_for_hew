@@ -12,35 +12,38 @@ endif
 
 include ../makerules
 
-LIBGENFLAGS =
-LIBGENFLAGS += -cpu=sh4a
-LIBGENFLAGS += -endian=little
-LIBGENFLAGS += -gbr=auto
-LIBGENFLAGS += -ecpp
-LIBGENFLAGS += -head=runtime,new,ctype,math,mathf,stdarg,stdio,stdlib,string,ios,complex,cppstring
+ARFLAGS =
+ARFLAGS += -cpu=sh4a
+ARFLAGS += -endian=little
+ARFLAGS += -gbr=auto
+ARFLAGS += -ecpp
+ARFLAGS += -head=runtime,new,ctype,math,mathf,stdarg,stdio,stdlib,string,ios,complex,cppstring
 
-LINKFLAGS :=
-LINKFLAGS += -noprelink
+LDFLAGS :=
+LDFLAGS += -noprelink
 ifndef is_debug
-LINKFLAGS += -nodebug
+LDFLAGS += -nodebug
 endif
-LINKFLAGS += -rom=D=R
-LINKFLAGS += -nomessage
-LINKFLAGS += -list=$(patsubst %.bin,%.map,$(TARGET))
-LINKFLAGS += -nooptimize
-LINKFLAGS += -nologo
-LINKFLAGS += -library=$(LIBGEN_TARGET)
-LINKFLAGS += $(addprefix -library=,$(LIBS))
+LDFLAGS += -rom=D=R
+LDFLAGS += -nomessage
+LDFLAGS += -list=$(patsubst %.bin,%.map,$(TARGET))
+LDFLAGS += -nooptimize
+LDFLAGS += -nologo
+LDFLAGS += -library=$(LIBGEN_TARGET)
+LDFLAGS += $(addprefix -library=,$(LIBS))
 
 OBJ_ABS := $(patsubst %.bin,%.abs,$(TARGET))
 
 $(LIBGEN_TARGET) :
-	$(LIBGEN) $(LIBGENFLAGS) -output=$@
+	$(AR) $(ARFLAGS) -output=$@
 
 $(OBJ_ABS) : $(OBJS) $(LIBGEN_TARGET) $(LIBS) $(APPEND_MAKE) $(LNK_SUBCOMMAND)
-	$(LINK) $(LINKFLAGS) -output=$@ -subcommand=$(LNK_SUBCOMMAND)
+	$(LD) $(LDFLAGS) -output=$@ -subcommand=$(LNK_SUBCOMMAND)
 
 $(TARGET) : $(OBJ_ABS)
-	$(LINK) -form=binary -output=$@ $<
+	$(LD) -form=binary -output=$@ $<
 
-.PHONY : all
+clean:
+	$(RM) $(TARGET) $(OBJ_ABS) $(OBJS) $(LIBGEN_TARGET)
+
+.PHONY : all clean
