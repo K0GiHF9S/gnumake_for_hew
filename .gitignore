@@ -9,4 +9,5 @@ make/
 *.BKW
 *.BKS
 *.BKP
-*.mak.*
+*.Debug
+*.Release

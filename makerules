@@ -2,18 +2,14 @@ ifeq ($(and $(SHC_INC),$(SHC_LIB),$(SHC_TMP)),)
 $(error SHC_INC, SHC_LIB and SHC_TMP must be set.)
 endif
 
-CC := $(SHC_LIB)/shc.exe -lang=c
-CXX := $(SHC_LIB)/shc.exe -lang=cpp
-ASM := $(SHC_LIB)/asmsh.exe
-LIBGEN := $(SHC_LIB)/lbgsh.exe
-LINK := $(SHC_LIB)/LnkSpawn.exe
+C := shc.exe -lang=c
+CXX := shc.exe -lang=cpp
+ASM := asmsh.exe
+LIBGEN := lbgsh.exe
+LINK := optlnk.exe
 
-LIBGENFLAGS =
-LIBGENFLAGS += -cpu=sh4a
-LIBGENFLAGS += -endian=little
-LIBGENFLAGS += -gbr=auto
-LIBGENFLAGS += -ecpp
-LIBGENFLAGS += -head=runtime,new,ctype,math,mathf,stdarg,stdio,stdlib,string,ios,complex,cppstring
+CFLAGS = $(CPPFLAGS)
+CXXFLAGS = $(CPPFLAGS)
 
 CPPFLAGS :=
 CPPFLAGS += -cpu=sh4a
@@ -47,14 +43,11 @@ OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(notdir $(CXX_SRC)))
 OBJ_ASM := $(patsubst %.src,$(OBJ_DIR)/%.obj,$(notdir $(ASM_SRC)))
 OBJS := $(OBJ_C) $(OBJ_CXX) $(OBJ_ASM)
 
-$(LIBGEN_TARGET) :
-	$(LIBGEN) $(LIBGENFLAGS) -output=$@
-
 $(OBJ_ASM) : $(OBJ_DIR)/%.obj : %.src
 	$(ASM) $(ASMFLAGS) -object=$@ $<
 
 $(OBJ_C) : $(OBJ_DIR)/%.obj : %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
+	$(C) $(CFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lst,$@) $<
 
 $(OBJ_CXX) : $(OBJ_DIR)/%.obj : %.cpp
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<
+	$(CXX) $(CXXFLAGS) -object=$@ -listfile=$(patsubst %.obj,%.lpp,$@) $<

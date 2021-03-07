@@ -1,11 +1,21 @@
 import sys
 import os
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 
 C_PREFIX = '.c'
 CPP_PREFIX = '.cpp'
 ASM_PREFIX = '.src'
+
+
+def read_hwp(p_filename, config):
+    with open(p_filename, 'r', encoding='cp932') as f:
+        data = f.read()
+    return data.replace('\\', '/') \
+        .replace('^"', '') \
+        .replace('$(PROJDIR)', '.') \
+        .replace('$(CONFIGDIR)', config) \
+        .replace('$(PROJECTNAME)', p_filename.stem)
 
 
 def filter_parent_dir(data):
@@ -19,15 +29,12 @@ def filter_src_files(data, record_dir):
     project_files = re.findall(
         '^"(.*?)"', project_files_area, flags=re.MULTILINE)
     project_files = [str(PureWindowsPath(f).relative_to(
-        record_dir)).replace('\\', '/') for f in project_files]
+        record_dir)) for f in project_files]
 
     c_project_files = [f for f in project_files if f.endswith(C_PREFIX)]
     cpp_project_files = [f for f in project_files if f.endswith(CPP_PREFIX)]
     asm_project_files = [f for f in project_files if f.endswith(ASM_PREFIX)]
-    rule_text = 'C_SRC := ' + ' \\\n\t'.join(c_project_files) + '\n'
-    rule_text += 'CXX_SRC := ' + ' \\\n\t'.join(cpp_project_files) + '\n'
-    rule_text += 'ASM_SRC := ' + ' \\\n\t'.join(asm_project_files)
-    return rule_text
+    return c_project_files, cpp_project_files, asm_project_files
 
 
 def to_option_dict(data, config):
@@ -46,49 +53,67 @@ def to_option_dict(data, config):
         print('Not supported option.')
         sys.exit(1)
 
-    option_data = {k: [d.replace('^"', '').replace('$(PROJDIR)', '.').replace('\\', '/') for d in v.split('|')] for (k, v) in re.findall(
+    option_data = {k: v.split('|') for (k, v) in re.findall(
         '\[\w\|(\w+)\|([^\]]*)\]', option_datas[0])}
 
     link_option_data = re.findall(
         '^.*\[S\|START\|.*\n', option_area, flags=re.MULTILINE)
-    link_option_data = {k: [d.replace('^"', '').replace('$(PROJDIR)', '.').replace('\\', '/') for d in v.split('|')] for (k, v) in re.findall(
+    link_option_data = {k: v.split('|') for (k, v) in re.findall(
         '\[\w\|(\w+)\|([^\]]*)\]', link_option_data[0])}
-    for k, v in link_option_data.items():
-        print(f'{k} {v}')
     return option_data, link_option_data
 
 
 def filter_include_dirs(option_data):
-    return 'INCLUDE := ' + ','.join(option_data.get('INCLUDE', ''))
+    return option_data.get('INCLUDE', '')
 
 
 def filter_defines(option_data):
-    return 'DEFINE := ' + ','.join(option_data.get('DEFINE', ''))
+    return option_data.get('DEFINE', '')
 
 
 def filter_sections(link_option_data):
+    if not 'START' in link_option_data:
+        return
     start = ','.join(link_option_data['START'])
-    start = re.sub('\(([\dA-F]+)\)', r'/\1', start).replace('$', '$$')
-    return f'START := {start}'
+    return re.sub('\(([\dA-F]+)\)', r'/\1', start)
 
 
 def hwp2rule(filename, config):
-    with open(filename, 'r', encoding='cp932') as f:
-        data = f.read()
     p_infile = Path(filename)
+    data = read_hwp(p_infile, config)
     p_outfile = p_infile.with_suffix(f'.mak.{config}').resolve()
+    p_lnkfile = p_infile.with_suffix(f'.lnk.{config}').resolve()
     os.chdir(p_infile.parent)
+
+    Path(config).mkdir(exist_ok=True)
 
     record_dir = filter_parent_dir(data)
     option_data, link_option_data = to_option_dict(data, config)
 
-    d = filter_src_files(data, record_dir) + '\n'
-    d += filter_include_dirs(option_data) + '\n'
-    d += filter_defines(option_data) + '\n'
-    d += filter_sections(link_option_data) + '\n'
+    c_project_files, cpp_project_files, asm_project_files = filter_src_files(
+        data, record_dir)
+    v = 'C_SRC := ' + ' \\\n\t'.join(c_project_files) + '\n'
+    v += 'CXX_SRC := ' + ' \\\n\t'.join(cpp_project_files) + '\n'
+    v += 'ASM_SRC := ' + ' \\\n\t'.join(asm_project_files) + '\n'
+
+    include_dirs = filter_include_dirs(option_data)
+    v += 'INCLUDE := ' + ','.join(include_dirs) + '\n'
+
+    defines = filter_defines(option_data)
+    v += 'DEFINE := ' + ','.join(defines) + '\n'
 
     with open(p_outfile, 'w', encoding='utf8') as f:
-        f.write(d)
+        f.write(v)
+
+    c = '\n'.join([f'-input=./{config}/' + PurePosixPath(s).with_suffix('.obj').name
+                   for s in (c_project_files + cpp_project_files + asm_project_files)]) + '\n'
+
+    sections = filter_sections(link_option_data)
+    if sections is not None:
+        c += f'-start={sections}\n'
+
+    with open(p_lnkfile, 'w', encoding='cp932') as f:
+        f.write(c)
 
 
 if __name__ == '__main__':
