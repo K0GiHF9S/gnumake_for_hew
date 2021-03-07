@@ -15,16 +15,17 @@ $(eval $1_PROJECT := $(basename $($1)).hwp)
 $(eval $1_APPEND := $(basename $($1)).mak.$(CONFIG))
 $(eval $1_LNK := $(basename $($1)).lnk.$(CONFIG))
 
-$($1_APPEND) $($1_LNK) : $1_SCRIPT
-
-$1_SCRIPT : $(SCRIPT) $($1_PROJECT)
+$($1_LNK) : $(SCRIPT) $($1_PROJECT)
+$($1_APPEND) : $($1_LNK) $(SCRIPT) $($1_PROJECT)
 	$(PYTHON) $(SCRIPT) $($1_PROJECT) $(CONFIG)
 
 $1 : $($1_APPEND) $($1_LNK)
-	@$(MAKE) -C $(dir $($1)) -f $(notdir $($1)) CONFIG=$(CONFIG) APPEND_MAKE=$(notdir $($1_APPEND)) LNK_SUBCOMMAND=$(notdir $($1_LNK))
 
 endef
 
 $(foreach sub,$(subs),$(eval $(call SUB_RULE,$(sub))))
+
+$(subs):
+	@$(MAKE) -C $(dir $($@)) -f $(notdir $($@)) CONFIG=$(CONFIG) APPEND_MAKE=$(notdir $($@_APPEND)) LNK_SUBCOMMAND=$(notdir $($@_LNK))
 
 .PHONY : all $(subs)
